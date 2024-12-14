@@ -1,0 +1,11 @@
+# To disable the code, add a semicolon at the beginning
+
+project_path: C:/git
+git_branch: develop
+gcc_option: -g **.c -o test.exe 2> error.log
+compilation_option: -D Itr
+source_file:
+- App_Test.c
+header_file:
+- App_Test.h
+- common.h
