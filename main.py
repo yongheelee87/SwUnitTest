@@ -1,6 +1,7 @@
 import yaml
 from Lib.commons import SETTING_YAML
 from Lib.generateTest import GenSWTest
+from Lib.analyzeRes import AnalyzeRes
 
 
 if __name__ == "__main__":
@@ -12,3 +13,4 @@ if __name__ == "__main__":
                        compil_option=setting["compilation_option"],
                        source=setting["source_file"],
                        header=setting["header_file"])
+    resUT = AnalyzeRes(time=swTest.time, var=swTest.var, exp_val=swTest.exp_val)

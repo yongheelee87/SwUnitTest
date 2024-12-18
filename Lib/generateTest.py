@@ -87,9 +87,10 @@ int main(void)
 
             lst_var, lst_exp_val = [], []
             for exp in expect.split('\n'):
-                lst_temp = exp.split()
-                lst_var.append(lst_temp[0])
-                lst_exp_val.append(lst_temp[-1])
+                if exp != '':
+                    lst_temp = exp.split()
+                    lst_var.append(lst_temp[0])
+                    lst_exp_val.append(lst_temp[-1])
             exp_val.append(lst_exp_val)
             out_var.append(lst_var)
             sub_symbol = ','.join(['%d' for _ in range(len(lst_var))])
