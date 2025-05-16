@@ -1,18 +1,22 @@
 import os
 import csv
 import numpy as np
+import pandas as pd
+import xlwings as xw
 from openpyxl.styles import PatternFill
 from copy import copy
+from pathlib import Path
 
-DEFAULT_DIR = 'C:/git/DevEnv/webUnitTest'  # default 폴더 저장
-SETTING_YAML = f'{DEFAULT_DIR}/data/setting.yaml'
-LAST_SETTING_YAML = f'{DEFAULT_DIR}/data/old/last_setting.yaml'
-UPLOAD_PATH = f'{DEFAULT_DIR}/data/upload'
-STUB_PATH = f'{DEFAULT_DIR}/data/stub'  # stub 코드 폴더
-TEST_CASE_FILE = f'{DEFAULT_DIR}/data/SW_TestCase.xlsx'  # 테스트케이스
-LAST_TEST_CASE_FILE = f'{DEFAULT_DIR}/data/old/Last_SW_TestCase.xlsx'
-RESULT_PATH = f'{DEFAULT_DIR}/data/result'
-DOWNLOAD_ZIP = f'{DEFAULT_DIR}/data/download.zip'
+# Use Path for better cross-platform compatibility
+DEFAULT_DIR = Path('C:/git/DevEnv/webUnitTest')  # default 폴더 저장
+SETTING_YAML = DEFAULT_DIR / 'data/setting.yaml'
+LAST_SETTING_YAML = DEFAULT_DIR / 'data/old/last_setting.yaml'
+UPLOAD_PATH = DEFAULT_DIR / 'data/upload'
+STUB_PATH = DEFAULT_DIR / 'data/stub'  # stub 코드 폴더
+TEST_CASE_FILE = DEFAULT_DIR / 'data/SW_TestCase.xlsx'  # 테스트케이스
+LAST_TEST_CASE_FILE = DEFAULT_DIR / 'data/old/Last_SW_TestCase.xlsx'
+RESULT_PATH = DEFAULT_DIR / 'data/result'
+DOWNLOAD_ZIP = DEFAULT_DIR / 'data/download.zip'
 
 
 def git_checkout(project_dir: str, branch: str):
@@ -93,3 +97,11 @@ def load_csv_list(file_path: str) -> list:
             reader = csv.reader(f)
             csv_lst = list(reader)
     return csv_lst
+
+
+def read_excel_xw(file_path: str) -> pd.DataFrame:
+    with xw.App(visible=False) as app:
+        wb = app.books.open(file_path)
+        df = wb.sheets[0].used_range.options(pd.DataFrame, header=1, index=False).value
+        wb.close()
+    return df
