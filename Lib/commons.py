@@ -1,157 +1,95 @@
 import os
 import csv
 import numpy as np
-from typing import List, Dict, Any, Union, Tuple, Optional
 from openpyxl.styles import PatternFill
 from copy import copy
-from pathlib import Path
 
-# Use Path for better cross-platform compatibility
-DEFAULT_DIR = Path('C:/git/DevEnv/webUnitTest')
-SETTING_YAML = DEFAULT_DIR / 'data/setting.yaml'
-LAST_SETTING_YAML = DEFAULT_DIR / 'data/old/last_setting.yaml'
-UPLOAD_PATH = DEFAULT_DIR / 'data/upload'
-STUB_PATH = DEFAULT_DIR / 'data/stub'
-TEST_CASE_FILE = DEFAULT_DIR / 'data/SW_TestCase.xlsx'
-LAST_TEST_CASE_FILE = DEFAULT_DIR / 'data/old/Last_SW_TestCase.xlsx'
-RESULT_PATH = DEFAULT_DIR / 'data/result'
-DOWNLOAD_ZIP = DEFAULT_DIR / 'data/download.zip'
-
-# Ensure directories exist
-for path in [UPLOAD_PATH, STUB_PATH, RESULT_PATH, DEFAULT_DIR / 'data/old']:
-    path.mkdir(parents=True, exist_ok=True)
+DEFAULT_DIR = 'C:/git/DevEnv/webUnitTest'  # default 폴더 저장
+SETTING_YAML = f'{DEFAULT_DIR}/data/setting.yaml'
+LAST_SETTING_YAML = f'{DEFAULT_DIR}/data/old/last_setting.yaml'
+UPLOAD_PATH = f'{DEFAULT_DIR}/data/upload'
+STUB_PATH = f'{DEFAULT_DIR}/data/stub'  # stub 코드 폴더
+TEST_CASE_FILE = f'{DEFAULT_DIR}/data/SW_TestCase.xlsx'  # 테스트케이스
+LAST_TEST_CASE_FILE = f'{DEFAULT_DIR}/data/old/Last_SW_TestCase.xlsx'
+RESULT_PATH = f'{DEFAULT_DIR}/data/result'
+DOWNLOAD_ZIP = f'{DEFAULT_DIR}/data/download.zip'
 
 
-def git_checkout(project_dir: str, branch: str) -> None:
+def git_checkout(project_dir: str, branch: str):
     """
-    Switch to the specified git branch in the project directory
-
-    Args:
-        project_dir: repo location to be installed via git
-        branch: repo branch
+    :param project_dir: repo location to be installed via git
+    :param branch: repo branch
     """
-    current_dir = os.getcwd()
-    try:
-        os.chdir(project_dir)
-        os.system(f"git checkout {branch}")
-    finally:
-        os.chdir(current_dir)  # Always return to original directory
+    os.chdir(project_dir)  # 프로젝트 있는 폴더로 변경
+    os.system(f"git checkout {branch}")
+    os.chdir(DEFAULT_DIR)  # default 폴더 복귀
 
 
-def copy_style(cell: Any, new_cell: Any) -> None:
-    """
-    Copy cell styles from one cell to another
-
-    Args:
-        cell: Source cell to copy style from
-        new_cell: Target cell to copy style to
-    """
+def copy_style(cell, new_cell):
     if cell.has_style:
         new_cell.font = copy(cell.font)
-        new_cell.border = copy(cell.border)  # Fixed typo: boarder -> border
+        new_cell.boarder = copy(cell.boarder)
         new_cell.fill = copy(cell.fill)
         new_cell.number_format = copy(cell.number_format)
         new_cell.protection = copy(cell.protection)
         new_cell.alignment = copy(cell.alignment)
 
 
-def add_col_data(worksheet: Any, index: int, title: str, data: List[str], res: bool = False) -> None:
-    """
-    Add a column of data to a worksheet
-
-    Args:
-        worksheet: The worksheet to modify
-        index: Column index to insert at
-        title: Column title
-        data: List of data values to insert
-        res: Whether this is a result column (for styling)
-    """
+def add_col_data(worksheet, index, title, data, res: bool = False):
     worksheet.insert_cols(index)
     worksheet.cell(row=1, column=index).value = title
     copy_style(worksheet.cell(row=1, column=3), worksheet.cell(row=1, column=index))
 
     for i, val in enumerate(data):
-        worksheet.cell(row=i + 2, column=index).value = val
-        copy_style(worksheet.cell(row=i + 2, column=3), worksheet.cell(row=i + 2, column=index))
-        if res:
-            color = None
+        worksheet.cell(row=1, column=index).value = val
+        copy_style(worksheet.cell(row=i+2, column=3), worksheet.cell(row=i+2, column=index))
+        if res is True:
             if val == 'Pass':
-                color = 'D3E6D6'
+                worksheet.cell(row=i+2, column=index).fill = PatternFill(start_color='D3E6D6', end_color='D3E6D6', fill_type='solid')
             elif val == 'Fail':
-                color = 'E86A75'
-
-            if color:
-                worksheet.cell(row=i + 2, column=index).fill = PatternFill(
-                    start_color=color, end_color=color, fill_type='solid'
-                )
+                worksheet.cell(row=i + 2, column=index).fill = PatternFill(start_color='E86A75', end_color='E86A75', fill_type='solid')
 
 
-def colorize(val: str) -> Optional[str]:
+def colorize(val: str):
     """
-    Return CSS style for coloring result cells
-
-    Args:
-        val: result Pass, Fail, Skip..
-    Returns:
-        CSS color string or None
+    :param val: result Pass, Fail, Skip..
+    :return: color map value
     """
+    color = None
     if val == "Pass":
-        return 'background-color: #5CE65C; color:black'
+        color = f'background-color: #5CE65C; color:black'
     elif val == "Fail":
-        return 'background-color: #FF6666; color:black'  # Fixed: Used consistent red color for "Fail"
-    return None
+        color = f'background-color: #5CE65C; color:black'
+    return color
 
 
-def get_2d_list(divider: int, path: str) -> np.ndarray:
+def get_2d_list(divider: int, path: str) -> np.array:
     """
-    Organize a list of files into a 2D grid
-
-    Args:
-        divider: the number of second dimension
-        path: file path
-    Returns:
-        np array 2 dimension of file path list
+    :param divider: the number of second dimension
+    :param path: file path
+    :return: np array 2 dimension of file path list
     """
-    path = Path(path)
-    lst_f = [f for f in os.listdir(path) if f.endswith('.csv')]  # Only consider CSV files
-
-    row_num, remainder = divmod(len(lst_f), divider)
-
-    if remainder == 0:
+    lst_f = [f for f in os.listdir(path)]
+    row_num, dum_num = divmod(len(lst_f), divider)
+    if dum_num == 0:
         dummy = []
     else:
-        dummy = ['nan' for _ in range(divider - remainder)]
+        dummy = ['nan' for _ in range(divider - dum_num)]
         row_num += 1
-
     return np.array(lst_f + dummy).reshape(row_num, divider)
 
 
-def load_csv_list(file_path: Union[str, Path]) -> List[List[str]]:
+def load_csv_list(file_path: str) -> list:
     """
-    Load data from a CSV file with automatic encoding detection
-
-    Args:
-        file_path: file path to load
-    Returns:
-        CSV data as a list of lists
+    :param file_path: file path to load
+    :return: csv list
     """
-    file_path = Path(file_path)
-    encodings = ['utf-8', 'cp949', 'cp1252']
-
-    for encoding in encodings:
-        try:
-            with open(file_path, 'r', encoding=encoding) as f:
-                reader = csv.reader(f)
-                return list(reader)
-        except UnicodeDecodeError:
-            continue
-
-    # If all encodings fail, try binary mode as last resort
-    with open(file_path, 'rb') as f:
-        content = f.read()
-        try:
-            decoded = content.decode('utf-8', errors='replace')
-            reader = csv.reader(decoded.splitlines())
-            return list(reader)
-        except Exception as e:
-            raise IOError(f"Failed to read CSV file {file_path}: {str(e)}")
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            csv_lst = list(reader)
+    except UnicodeDecodeError:
+        with open(file_path, 'r', encoding='cp949') as f:
+            reader = csv.reader(f)
+            csv_lst = list(reader)
+    return csv_lst
