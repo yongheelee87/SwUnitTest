@@ -116,7 +116,7 @@ class AnalyzeRes:
         """결과 보고서 Excel 파일 생성"""
         try:
             # 결과 파일 경로 설정
-            result_xlsx = f"{self.res_path}_SW_TestCase.xlsx"
+            result_xlsx = f"{self.res_path}_testcase.xlsx"
 
             # 테스트 케이스 파일 로드
             wb = openpyxl.load_workbook(TEST_CASE_FILE)

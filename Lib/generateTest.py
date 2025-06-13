@@ -3,16 +3,16 @@ import time
 from typing import List, Dict, Optional
 import pandas as pd
 from Lib.stubFile import StubFile
-from Lib.commons import RESULT_PATH, STUB_PATH, TEST_CASE_FILE
+from Lib.commons import RESULT_PATH, STUB_PATH, TEST_CASE_FILE, copyfile_if_different, extract_key_value_pairs, remove_leading_newlines
 
 DRIVER_CODE = 'test_driver.c'  # test driver 코드
 DEFINITIONS = ['OFF : 0', 'ON : 1', 'FALSE : 0', 'TRUE : 1', 'NULL_16 : 65535']
 
 
 class GenSWTest(StubFile):
-    def __init__(self, gcc_option: str, pjt: str, compil_option: str, source: List[str], header: List[str]):
+    def __init__(self, gcc_option: str, pjt: str, compil_option: str, source: List[str], header: List[str], testcase: str = TEST_CASE_FILE):
         StubFile.__init__(self, pjt=pjt, c_option=compil_option, source=source, header=header)
-        self.file: str = TEST_CASE_FILE
+        copyfile_if_different(testcase, TEST_CASE_FILE)
         self.include: List[str] = [f.replace('.c', '.h') for f in os.listdir(STUB_PATH) if f.endswith('.c')]
         self.time: str = time.strftime('%Y%m%d_%H%M%S', time.localtime())
         self.df_test: pd.DataFrame = pd.DataFrame()
@@ -87,7 +87,7 @@ class GenSWTest(StubFile):
 
         return code_str
 
-    def _parse_inputs(self, inputs: str, cycle: int) -> List[str]:
+    def _parse_inputs(self, inputs: str) -> List[str]:
         """입력 파싱"""
         if not inputs or pd.isna(inputs):
             return []
@@ -111,26 +111,26 @@ class GenSWTest(StubFile):
     def get_code(self) -> str:
         """테스트 코드 생성"""
         lst_code: List[str] = ['#include <stdio.h>'] + [f'#include "{inc}"' for inc in self.include]
-        self.df_test = pd.read_excel(self.file, engine='openpyxl').iloc[:, 1:]
+        self.df_test = pd.read_excel(TEST_CASE_FILE, engine='openpyxl').iloc[:, 1:]
         main_test: List[str] = []
         dict_test: Dict[str, str] = {}
 
         for unit_test in self.df_test.values:
             test_num: str = str(int(unit_test[0])).zfill(3)
-            funcs: str = unit_test[3]
-            pre_condition: Optional[str] = unit_test[5]
-            inputs: str = '' if pd.isna(unit_test[6]) else unit_test[6]
-            expect: str = unit_test[7]
+            funcs: str = '' if pd.isna(unit_test[4]) else unit_test[4]
+            pre_condition: Optional[str] = unit_test[6]
+            inputs: str = '' if pd.isna(unit_test[7]) else unit_test[7]
+            expect: str = unit_test[8]
             note: str = '' if pd.isna(unit_test[-1]) else unit_test[-1]
-            cycle: int = int(unit_test[4])
-            c_file: str = unit_test[2]
+            cycle: int = int(unit_test[5])
+            c_file: str = unit_test[3]
 
             # 함수 코드 포맷팅
             func: str = '\n'.join([f"    {f.strip()};" for f in funcs.split('\n') if f.strip()])
 
             # 사전 조건 처리
             lst_pre: List[str] = self._parse_preconditions(pre_condition, dict_test, c_file)
-            pre_code: str = '\n'.join(lst_pre)
+            pre_code: str = remove_leading_newlines(lst_pre)
 
             # 정의 적용
             definitions: List[str] = [n for n in note.split('\n') if n] + DEFINITIONS if note else DEFINITIONS
@@ -143,16 +143,23 @@ class GenSWTest(StubFile):
             lst_exp_val: List[str] = []
             for exp in expect.split('\n'):
                 if exp:
-                    lst_temp = exp.split()
-                    lst_var.append(lst_temp[0])
-                    lst_exp_val.append(lst_temp[-1])
+                    if int(exp.count('=')) > 1:  # 띄워쓰기 /n가 안되어 있다면 한줄에 있을 가능성 있음
+                        lst_exp = extract_key_value_pairs(exp)
+                        for e in lst_exp:
+                            lst_temp = e.split()
+                            lst_var.append(lst_temp[0])
+                            lst_exp_val.append(lst_temp[-1])
+                    else:
+                        lst_temp = exp.split()
+                        lst_var.append(lst_temp[0])
+                        lst_exp_val.append(lst_temp[-1])
 
             self.exp_val.append(lst_exp_val)
             self.var.append(lst_var)
             sub_symbol: str = ','.join(['%d' for _ in range(len(lst_var))])
 
             # 입력 처리
-            lst_input: List[str] = self._parse_inputs(inputs, cycle)
+            lst_input: List[str] = self._parse_inputs(inputs)
 
             # 조건 처리
             lst_cond: List[str] = []

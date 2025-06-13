@@ -64,7 +64,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-csv_path = f"{RESULT_PATH}/{select_result.replace('_SW_TestCase.xlsx', '')}"
+csv_path = f"{RESULT_PATH}/{select_result.replace('_testcase.xlsx', '')}"
 result_files = get_2d_list(divider=3, path=csv_path)
 for res in result_files:
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -91,16 +91,16 @@ nodes = [
         "label": "Setting",
         "value": "setting",
         "children": [
-            {"label": "Setting.yaml", "value": SETTING_YAML},
-            {"label": "Last_Setting.yaml", "value": LAST_SETTING_YAML},
+            {"label": "setting.yaml", "value": SETTING_YAML},
+            {"label": "last_setting.yaml", "value": LAST_SETTING_YAML},
         ]
     },
     {
         "label": "Test_Case",
         "value": "test_case",
         "children": [
-            {"label": "SW_TestCase.xlsx", "value": TEST_CASE_FILE},
-            {"label": "Last_SW_TestCase.xlsx", "value": LAST_TEST_CASE_FILE},
+            {"label": "testcase.xlsx", "value": TEST_CASE_FILE},
+            {"label": "last_testcase.xlsx", "value": LAST_TEST_CASE_FILE},
         ]
     },
     {

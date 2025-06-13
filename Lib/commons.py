@@ -1,21 +1,24 @@
 import os
 import csv
+import re
+import shutil
+
 import numpy as np
 import pandas as pd
 import xlwings as xw
 from openpyxl.styles import PatternFill
 from copy import copy
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 
 # Use Path for better cross-platform compatibility
-DEFAULT_DIR = Path('C:/git/DevEnv/webUnitTest')  # default 폴더 저장
+DEFAULT_DIR = Path('C:/git/SwUnitTest')  # default 폴더 저장
 SETTING_YAML = DEFAULT_DIR / 'data/setting.yaml'
 LAST_SETTING_YAML = DEFAULT_DIR / 'data/old/last_setting.yaml'
 UPLOAD_PATH = DEFAULT_DIR / 'data/upload'
 STUB_PATH = DEFAULT_DIR / 'data/stub'  # stub 코드 폴더
-TEST_CASE_FILE = DEFAULT_DIR / 'data/SW_TestCase.xlsx'  # 테스트케이스
-LAST_TEST_CASE_FILE = DEFAULT_DIR / 'data/old/Last_SW_TestCase.xlsx'
+TEST_CASE_FILE = DEFAULT_DIR / 'data/testcase.xlsx'  # 테스트케이스
+LAST_TEST_CASE_FILE = DEFAULT_DIR / 'data/old/last_testcase.xlsx'
 RESULT_PATH = DEFAULT_DIR / 'data/result'
 DOWNLOAD_ZIP = DEFAULT_DIR / 'data/download.zip'
 
@@ -192,3 +195,46 @@ def read_excel_xw(file_path: str) -> pd.DataFrame:
         except Exception as e:
             print(f"Error reading Excel file {file_path}: {e}")
             return pd.DataFrame()
+
+
+def is_same_path(path_str1: Union[str, Path], path_str2: Union[str, Path]) -> bool:
+    """
+    두 경로가 동일한 파일/디렉토리를 가리키는지 확인합니다.
+
+    경로 문자열이나 Path 객체를 입력받아, resolve()를 통해 절대경로로 변환한 후 비교한다.
+
+    Args:
+        path_str1 (str | Path): 첫 번째 경로
+        path_str2 (str | Path): 두 번째 경로
+
+    Return:
+         bool: 두 경로가 동일하면 True, 그렇지 않으면 False
+    """
+    # 문자열 또는 Path 객체를 절대 경로로 변환
+    return Path(path_str1).resolve() == Path(path_str2).resolve()  # 정규화된 경로끼리 비교
+
+
+def copyfile_if_different(src: Union[str, Path], dst: Union[str, Path]) -> None:
+    """
+    src와 dst 경로가 다르면 src를 dst로 복사한다.
+
+    Args:
+        src (str | Path): 원본 파일 경로
+        dst (str | Path): 대상 파일 경로
+    """
+    if not is_same_path(src, dst):
+        shutil.copyfile(src, dst)
+    else:
+        pass
+
+
+def extract_key_value_pairs(s: str) -> List[str]:
+    # 단어 = 단어 형태의 패턴을 찾아 리스트로 반환
+    return re.findall(r'\w+\s*=\s*\w+', s)
+
+
+def remove_leading_newlines(lst_lines: List[str]) -> str:
+    """
+    문자열 앞부분의 줄바꿈 문자(\n)만 제거한다.
+    """
+    return '\n'.join([(re.sub(r'^\n+', '', s)) for s in lst_lines])
