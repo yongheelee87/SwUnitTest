@@ -28,10 +28,10 @@ with st.spinner('테스트 실행중입니다......'):
                        header=st.session_state["header_file"])
 
     if swTest.status is True:
-        resUT = AnalyzeRes(time=swTest.time, exp_res=swTest.exp_result)
+        swRes = AnalyzeRes(time=swTest.time, exp_res=swTest.exp_result)
         col1, col2 = st.columns([1, 1])
         fig = px.pie(
-            pd.DataFrame({'result': ['Pass', 'Fail'], 'number': [len(resUT.result) - len(resUT.fail_index), len(resUT.fail_index)]}),
+            pd.DataFrame({'result': ['Pass', 'Fail'], 'number': [len(swRes.test_result.results) - len(swRes.test_result.failed_indices), len(swRes.test_result.failed_indices)]}),
             names='result',
             values='number',
             title='결과 현황',
@@ -40,20 +40,20 @@ with st.spinner('테스트 실행중입니다......'):
         fig.update_traces(textposition='inside', textinfo='percent+label+value')
         fig.update_layout(margin=dict(b=10, l=0, r=0), font=dict(size=12))
         col1.plotly_chart(fig)
-        if len(resUT.fail_index) != 0:
-            st.error(f"테스트 {', '.join(resUT.fail_index)}에서 에러가 있습니다.")
+        if len(swRes.test_result.failed_indices) != 0:
+            st.error(f"테스트 {', '.join(swRes.test_result.failed_indices)}에서 에러가 있습니다.")
         else:
             st.success("모든 테스트가 에러 없이 통과했습니다.")
 
-        st.info(f"테스트 케이스 총 {len(resUT.result)}개, 성공: {len(resUT.result) - len(resUT.fail_index)}개, 실패: {len(resUT.fail_index)}개")
+        st.info(f"테스트 케이스 총 {len(swRes.test_result.results)}개, 성공: {len(swRes.test_result.results) - len(swRes.test_result.failed_indices)}개, 실패: {len(swRes.test_result.failed_indices)}개")
 
         #  Data Frame 변환
-        swTest.df_test.insert(8, 'Measured(산출값)', resUT.meas_out, True)
-        swTest.df_test.insert(1, 'Result(결과)', resUT.result, True)
+        swTest.df_test.insert(8, 'Measured(산출값)', swRes.test_result.measured_output, True)
+        swTest.df_test.insert(1, 'Result(결과)', swRes.test_result.results, True)
         df_style = swTest.df_test.style.map(colorize, subset=["Result(결과)"])
         st.dataframe(df_style, height=(len(swTest.df_test) + 1) * 35 + 10, hide_index=True)
 
-        result_file = f"{resUT.res_path}_SW_TestCase.xlsx"
+        result_file = f"{swRes.res_path}_SW_TestCase.xlsx"
         with open(result_file, mode="rb") as file:
             btn = st.download_button(
                 type="primary",
@@ -75,21 +75,21 @@ with st.spinner('테스트 실행중입니다......'):
         </style>
         """, unsafe_allow_html=True)
         
-        result_files = get_2d_list(divider=3, path=resUT.res_path)
+        result_files = get_2d_list(divider=3, path=swRes.res_path)
         for res in result_files:
             col1, col2, col3 = st.columns([1, 1, 1])
             with col1.expander(os.path.basename(res[0])):
-                df_res1 = pd.read_csv(f"{resUT.res_path}/{res[0]}", dtype=object, encoding='cp1252')
+                df_res1 = pd.read_csv(f"{swRes.res_path}/{res[0]}", dtype=object, encoding='cp1252')
                 st.dataframe(df_res1, hide_index=True)
             
             if 'nan' not in res[1]:
                 with col2.expander(os.path.basename(res[1])):
-                    df_res2 = pd.read_csv(f"{resUT.res_path}/{res[1]}", dtype=object, encoding='cp1252')
+                    df_res2 = pd.read_csv(f"{swRes.res_path}/{res[1]}", dtype=object, encoding='cp1252')
                     st.dataframe(df_res2, hide_index=True)
 
             if 'nan' not in res[2]:
                 with col3.expander(os.path.basename(res[2])):
-                    df_res3 = pd.read_csv(f"{resUT.res_path}/{res[2]}", dtype=object, encoding='cp1252')
+                    df_res3 = pd.read_csv(f"{swRes.res_path}/{res[2]}", dtype=object, encoding='cp1252')
                     st.dataframe(df_res3, hide_index=True)
     else:
         st.error("컴파일러를 통한 빌드가 정상적으로 진행되지 않았습니다. 에러로그를 통해 소스코드를 다시 확인해주세요")

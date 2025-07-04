@@ -123,7 +123,7 @@ def colorize(val: str) -> Optional[str]:
     return None
 
 
-def get_2d_list(divider: int, path: str) -> np.ndarray:
+def get_2d_list(divider: int, path: Path) -> np.ndarray:
     """디렉토리 파일 목록을 2D 배열로 변환
 
     Args:
