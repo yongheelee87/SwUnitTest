@@ -13,4 +13,4 @@ if __name__ == "__main__":
                        compil_option=setting["compilation_option"],
                        source=setting["source_file"],
                        header=setting["header_file"])
-    resUT = AnalyzeRes(time=swTest.time, var=swTest.var, exp_val=swTest.exp_val)
+    resUT = AnalyzeRes(time=swTest.time, exp_res=swTest.exp_result)

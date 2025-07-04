@@ -28,10 +28,10 @@ with st.spinner('테스트 실행중입니다......'):
                        header=st.session_state["header_file"])
 
     if swTest.status is True:
-        resUT = AnalyzeRes(time=swTest.time, var=swTest.var, exp_val=swTest.exp_val)
+        resUT = AnalyzeRes(time=swTest.time, exp_res=swTest.exp_result)
         col1, col2 = st.columns([1, 1])
         fig = px.pie(
-            pd.DataFrame({'result': ['Pass', 'Fail'], 'number': [len(result) - len(fail_index), len(fail_index)]}),
+            pd.DataFrame({'result': ['Pass', 'Fail'], 'number': [len(resUT.result) - len(resUT.fail_index), len(resUT.fail_index)]}),
             names='result',
             values='number',
             title='결과 현황',

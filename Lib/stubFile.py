@@ -12,7 +12,8 @@ class StubFile:
         self.lst_header: List[str] = header.copy()
         self.del_op: List[str]
         self.insert_op: List[str]
-        self.del_op, self.insert_op = self.get_options(options=c_option)
+        self.define_op: List[str]
+        self.del_op, self.insert_op, self.define_op = self.get_options(options=c_option)
         self.prepare_stub_environment()
         self.stub_source()
         self.stub_header()
@@ -75,6 +76,11 @@ class StubFile:
         for file in self.lst_header:
             header_path = os.path.join(STUB_PATH, file)
             revised_code = self.apply_option(file_path=header_path)
+
+            if self.define_op:
+                if 'common.h' in file:
+                    for def_op in self.define_op:
+                        revised_code.append(f"#define {def_op}\n")
             self.write_file(header_path, ''.join(revised_code))
 
     @staticmethod
@@ -96,18 +102,20 @@ class StubFile:
             f.truncate()  # 기존 내용이 길 경우 잘라줌
 
     @staticmethod
-    def get_options(options: str) -> Tuple[List[str], List[str]]:
+    def get_options(options: str) -> Tuple[List[str], List[str], List[str]]:
         """컴파일 옵션 파싱"""
         delete_option: List[str] = []
         insert_option: List[str] = []
+        define_option: List[str] = []
 
         for option in [op.split() for op in options.split('-') if op]:
             if option and option[0].startswith('D'):
                 delete_option = option[1:]
             elif option and option[0].startswith('I'):
                 insert_option = option[1:]
-
-        return delete_option, insert_option
+            elif option and option[0].startswith('A'):
+                define_option.append(' '.join(option[1:]))
+        return delete_option, insert_option, define_option
 
     def apply_option(self, file_path: str) -> List[str]:
         """파일에 옵션 적용"""
@@ -171,6 +179,7 @@ class StubFile:
     def filter_description(self, code: List[str]) -> List[str]:
         """구현부 필터링"""
         ref_func_prefixes: List[str] = [source.split('_')[0] for source in self.lst_source]
+        ref_func_prefixes.extend(self.insert_op)
 
         result: List[str] = []
         for line in code:

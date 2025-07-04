@@ -2,7 +2,6 @@ import os
 import csv
 import re
 import shutil
-
 import numpy as np
 import pandas as pd
 import xlwings as xw
@@ -21,6 +20,7 @@ TEST_CASE_FILE = DEFAULT_DIR / 'data/testcase.xlsx'  # 테스트케이스
 LAST_TEST_CASE_FILE = DEFAULT_DIR / 'data/old/last_testcase.xlsx'
 RESULT_PATH = DEFAULT_DIR / 'data/result'
 DOWNLOAD_ZIP = DEFAULT_DIR / 'data/download.zip'
+ERROR_LOG = DEFAULT_DIR / 'data/stub/error.log'
 
 
 def git_checkout(project_dir: str, branch: str) -> None:
@@ -190,8 +190,10 @@ def read_excel_xw(file_path: str) -> pd.DataFrame:
         try:
             wb = app.books.open(file_path)
             df = wb.sheets[0].used_range.options(pd.DataFrame, header=1, index=False).value
+            # 번쨰 열에 NaN이 있는 행을 제거한 새로운 Dataframe을 반환
+            valid_col = [col for col in df.columns if col is not None]
             wb.close()
-            return df
+            return df[valid_col]
         except Exception as e:
             print(f"Error reading Excel file {file_path}: {e}")
             return pd.DataFrame()

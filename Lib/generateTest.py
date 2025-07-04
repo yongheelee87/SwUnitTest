@@ -1,5 +1,7 @@
 import os
 import time
+import re
+from collections import defaultdict
 from typing import List, Dict, Optional
 import pandas as pd
 from Lib.stubFile import StubFile
@@ -16,8 +18,7 @@ class GenSWTest(StubFile):
         self.include: List[str] = [f.replace('.c', '.h') for f in os.listdir(STUB_PATH) if f.endswith('.c')]
         self.time: str = time.strftime('%Y%m%d_%H%M%S', time.localtime())
         self.df_test: pd.DataFrame = pd.DataFrame()
-        self.exp_val: List[List[str]] = []
-        self.var: List[List[str]] = []
+        self.exp_result: List[Dict[int, List[str]]] = []
         self.create_file(self.get_code())
         self.status: bool = self.run_driver(gcc_option=gcc_option)
 
@@ -140,22 +141,30 @@ class GenSWTest(StubFile):
 
             # 예상 값 처리
             lst_var: List[str] = []
-            lst_exp_val: List[str] = []
-            for exp in expect.split('\n'):
-                if exp:
-                    if int(exp.count('=')) > 1:  # 띄워쓰기 /n가 안되어 있다면 한줄에 있을 가능성 있음
-                        lst_exp = extract_key_value_pairs(exp)
-                        for e in lst_exp:
-                            lst_temp = e.split()
-                            lst_var.append(lst_temp[0])
-                            lst_exp_val.append(lst_temp[-1])
-                    else:
-                        lst_temp = exp.split()
-                        lst_var.append(lst_temp[0])
-                        lst_exp_val.append(lst_temp[-1])
+            result = defaultdict(list)
 
-            self.exp_val.append(lst_exp_val)
-            self.var.append(lst_var)
+            if ')' in expect:
+                # 정규식으로 파싱
+                pattern = re.compile(r"(\d+)\)\s*(\w+)\s*=\s*(\d+)")
+                for match in pattern.finditer(expect):
+                    key = int(match.group(1))
+                    var = match.group(2)
+                    val = match.group(3)
+                    result[key].append((var, val))
+                    if not var in lst_var:
+                        lst_var.append(var)
+
+            else:
+                # 정규식으로 모든 "이름=숫자" 패턴을 추출
+                pattern = re.compile(r"(\w+)\s*=\s*(\d+)")
+                for match in pattern.finditer(expect):
+                    var = match.group(1)
+                    val = match.group(2)
+                    result[255].append((var, val))
+                    lst_var.append(var)
+
+            # 딕셔너리로 출력
+            self.exp_result.append(dict(result))
             sub_symbol: str = ','.join(['%d' for _ in range(len(lst_var))])
 
             # 입력 처리
